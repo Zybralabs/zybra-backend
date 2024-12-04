@@ -3,35 +3,66 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema({
   first_name: { type: String, required: true },
   last_name: { type: String, required: true },
-  user_type: { type: String, required: true },
+  user_type: { type: String, required: true }, // Example: 'admin', 'customer', etc.
   email: {
     type: String,
     required: true,
     unique: true,
-    match:
-      /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/,
+    match: /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/, // Simplified email regex
   },
   password: { type: String, required: true },
-  verified: { type: Boolean, required: true },
+  verified: { type: Boolean, default: false }, // Default to `false` until verified
   profile_status: {
     type: String,
     enum: ["complete", "in-complete"],
-    required: true,
+    default: "in-complete", // Default for new users
   },
   profile_details: {
     type: {
-      image: { type: String, required: true },
-      about: { type: String, required: true },
-      country: { type: String, required: true },
-      state: { type: String, required: true },
-      city: { type: String, required: true },
-      address: { type: String, required: true },
+      image: { type: String }, // Optional, for profile pictures
+      about: { type: String },
+      country: { type: String },
+      state: { type: String },
+      city: { type: String },
+      address: { type: String },
     },
+    default: {}, // Ensures no null/undefined profile details
   },
-  paid_users: {
-    type: [mongoose.mongoose.ObjectId],
-    ref: "User",
+  wallets: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Wallet", // References the Wallet model
+    },
+  ],
+  kyc_status: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "pending",
   },
+  kyc_details: {
+    type: {
+      document_type: { type: String }, // Example: 'passport', 'driver_license'
+      document_number: { type: String },
+      document_image: { type: String }, // Path to document image
+      submitted_at: { type: Date, default: Date.now },
+      approved_at: { type: Date },
+    },
+    default: {}, // Optional for users without KYC
+  },
+  paid_users: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User", // Correctly references the User model
+    },
+  ],
+  created_at: { type: Date, default: Date.now }, // Tracks creation time
+  updated_at: { type: Date, default: Date.now }, // Tracks last update
+});
+
+// Middleware to update `updated_at` automatically
+userSchema.pre("save", function (next) {
+  this.updated_at = Date.now();
+  next();
 });
 
 export const User = mongoose.model("User", userSchema);
