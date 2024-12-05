@@ -24,10 +24,38 @@ const signInUserSchema = emailReqSchema.keys({
   password: passwordValidation,
 });
 
-const signUpUserSchema = signInUserSchema.keys({
+
+const profileDetailsSchema = joi.object({
+  image: joi.string().uri().optional(), // Optional image URL
+  about: joi.string().optional(),
+  country: joi.string().optional(),
+  state: joi.string().optional(),
+  city: joi.string().optional(),
+  address: joi.string().optional(),
+});
+
+const signUpUserSchema = joi.object({
   first_name: joi.string().required(),
   last_name: joi.string().required(),
-  user_type: joi.string().required(),
+  user_type: joi.string().valid("admin", "customer").required(), // Valid values for `user_type`
+  email: joi.string()
+    .email({ tlds: { allow: true } }) // Email validation
+    .required(),
+  password: joi.string().min(8).required(), // Password must be at least 8 characters
+  profile_details: profileDetailsSchema.optional(), // Optional profile details
+  verified: joi.boolean().default(false), // Default is false
+  profile_status: joi.string().valid("complete", "in-complete").default("in-complete"),
+  wallet: joi.string().optional(), // Optional array of wallet references
+});
+
+export const verifyCodeSchema = joi.object({
+  email: joi.string().email({ tlds: { allow: true } }).required(),
+  code: joi.string().length(6).required(), // 6-digit verification code
+});
+
+// Wallet Sign-In Schema
+export const walletSignInSchema = joi.object({
+  walletAddress: joi.string().required(),
 });
 
 const resetPassSchema = tokenReqSchema.keys({
@@ -70,13 +98,21 @@ const deleteProfileSchema = joi.object().keys({
   id: idValidation,
 });
 
+
+export const emailVerificationSchema = Joi.object({
+  email: joi.string().email({ tlds: { allow: true } }).required(),
+});
+
 export {
   signUpUserSchema,
   signInUserSchema,
   tokenReqSchema,
   emailReqSchema,
   resetPassSchema,
+  verifyCodeSchema,
+walletSignInSchema,
   createProfileSchema,
   updateProfileSchema,
+  emailVerificationSchema,
   deleteProfileSchema,
 };

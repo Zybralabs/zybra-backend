@@ -39,6 +39,8 @@ const userSchema = new mongoose.Schema({
     enum: ["pending", "approved", "rejected"],
     default: "pending",
   },
+  verification_code: { type: String }, // Stores the verification code
+  verification_expires: { type: Date }, // Expiry for the code
   kyc_details: {
     type: {
       document_type: { type: String }, // Example: 'passport', 'driver_license'
