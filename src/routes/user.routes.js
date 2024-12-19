@@ -52,4 +52,10 @@ router.post("/transaction", addTransaction);
 // Get all transactions for a user (filter by wallet optional)
 router.get("/transactions", getTransactions);
 
+// Get total investment in USD for a user
+router.get("/investments/total", getTotalInvestment);
+
+// Get user assets and pools holdings
+router.get("/holdings", getUserAssetsAndPoolsHoldings);
+
 export default router;

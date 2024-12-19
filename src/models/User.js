@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
     unique: true,
     match: /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/, // Simplified email regex
   },
+  type: 
   password: { type: String, required: true },
   verified: { type: Boolean, default: false }, // Default to `false` until verified
   profile_status: {

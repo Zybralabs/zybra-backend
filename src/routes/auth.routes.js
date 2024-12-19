@@ -21,12 +21,12 @@ router.post("/sign-up", validateBody(signUpUserSchema), signUp);
 // User sign-in
 router.post("/sign-in", validateBody(signInUserSchema), signIn);
 
-// Email verification for 2FA
-router.post("/verify-code", validateBody(verifyCodeSchema), verifyCode);
 
 // Wallet-based sign-in
 router.post("/wallet-sign-in", validateBody(walletSignInSchema), walletSignIn);
+// Email verification for 2FA
 
+router.post("/verify-code", validateBody(verifyCodeSchema), verifyCode);
 router.post(
   "/send-verification-email",
   validateBody(emailVerificationSchema), // Ensure the email is valid
