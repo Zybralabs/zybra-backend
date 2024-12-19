@@ -7,12 +7,14 @@ import {
   walletSignInSchema,
 } from "../schemaValidation/auth.schema.js";
 import {
+  getUserInfoWithWallet,
   sendVerificationEmailController,
   signIn,
   signUp,
   verifyCode,
   walletSignIn,
 } from "../controllers/auth.controllers.js";
+import { userAuth } from "../middlewares/authentication.js";
 
 const router = express.Router();
 
@@ -27,9 +29,12 @@ router.post("/sign-in", validateBody(signInUserSchema), signIn);
 router.post("/wallet-sign-in", validateBody(walletSignInSchema), walletSignIn);
 // Email verification for 2FA
 
-router.post("/verify-code", validateBody(verifyCodeSchema), verifyCode);
+router.get("/user-info", userAuth,getUserInfoWithWallet);
+
+router.post("/verify-code", userAuth,validateBody(verifyCodeSchema), verifyCode);
 router.post(
   "/send-verification-email",
+  userAuth,
   sendVerificationEmailController
 );
 

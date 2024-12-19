@@ -13,32 +13,33 @@ import {
   getTotalInvestment,
   getUserAssetsAndPoolsHoldings,
 } from "../controllers/user.controllers.js";
+import { userAuth } from "../middlewares/authentication.js";
 
 const router = express.Router();
 
 // --------------------- USER ROUTES ---------------------
 
 // Get user profile
-router.get("/profile", getUserProfile);
+router.get("/profile",userAuth, getUserProfile);
 
 // Update user profile
-router.put("/profile", updateUserProfile);
+router.put("/profile",userAuth, updateUserProfile);
 
 // --------------------- KYC ROUTES ---------------------
 
 // Submit KYC details
-router.post("/kyc", submitKYC);
+router.post("/kyc",userAuth, submitKYC);
 
 // Get KYC status
-router.get("/kyc", getKYCStatus);
+router.get("/kyc",userAuth, getKYCStatus);
 
 // --------------------- WALLET ROUTES ---------------------
 
 // Add a wallet
-router.post("/wallet", addWallet);
+router.post("/wallet",userAuth, addWallet);
 
 // Get all wallets for a user
-router.get("/wallets", getWallets);
+router.get("/wallets",userAuth, getWallets);
 
 // Create an abstract wallet
 router.post("/wallet/abstract", createAbstractWallet);
@@ -46,18 +47,18 @@ router.post("/wallet/abstract", createAbstractWallet);
 // --------------------- TRANSACTION ROUTES ---------------------
 
 // Execute a transaction
-router.post("/transaction/execute", executeTransaction);
+router.post("/transaction/execute",userAuth, executeTransaction);
 
 // Add a manual transaction (optional use case)
-router.post("/transaction", addTransaction);
+router.post("/transaction", userAuth, addTransaction);
 
 // Get all transactions for a user (filter by wallet optional)
 router.get("/transactions", getTransactions);
 
 // Get total investment in USD for a user
-router.get("/investments/total", getTotalInvestment);
+router.get("/investments/total", userAuth,getTotalInvestment);
 
 // Get user assets and pools holdings
-router.get("/holdings", getUserAssetsAndPoolsHoldings);
+router.get("/holdings", userAuth,getUserAssetsAndPoolsHoldings);
 
 export default router;

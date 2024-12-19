@@ -4,7 +4,7 @@ import { generateController } from "../utils/generateController.js";
 
 // Middleware to check if the user is an admin
 const isAdmin = (req, res, next) => {
-  const { user } = req;
+  const { user } = req; // Assuming the user is attached to the request object after authentication
   if (!user || user.role !== "admin") {
     return res.status(403).json({
       message: "Access denied. Only admins can perform this action.",
@@ -13,6 +13,7 @@ const isAdmin = (req, res, next) => {
   }
   next();
 };
+
 
 // --------------------- POOLS ---------------------
 

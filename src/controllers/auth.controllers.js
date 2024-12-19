@@ -319,4 +319,54 @@ const verifyCode = generateController(async (request, response, raiseException) 
   });
 });
 
-export { signIn, signUp, walletSignIn, verifyCode };
+const getUserInfoWithWallet = generateController(async (request, response, raiseException) => {
+  const { authorization } = request.headers;
+
+  // Check if token is provided
+  if (!authorization || !authorization.startsWith("Bearer ")) {
+    return raiseException(401, "Authorization token is missing or invalid");
+  }
+
+  const token = authorization.split(" ")[1];
+
+  // Find the token in the database
+  const tokenRecord = await Token.findOne({ token }).exec();
+  if (!tokenRecord) {
+    return raiseException(401, "Invalid or expired session token");
+  }
+
+  // Fetch the user linked to the token
+  const user = await User.findById(tokenRecord.user).exec();
+  if (!user) {
+    return raiseException(404, "User not found");
+  }
+
+  // Fetch the user's wallet
+  const wallet = await Wallet.findOne({ user: user._id }).exec();
+  if (!wallet) {
+    return raiseException(404, "Wallet not found");
+  }
+
+  // Prepare the response payload
+  const userResponse = {
+    id: user._id,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    email: user.email,
+    kyc_status: user.kyc_status,
+    user_type: user.user_type,
+    wallet: {
+      address: wallet.address,
+      type: wallet.type,
+    },
+  };
+
+  // Send the response
+  response.status(200).json({
+    message: "User and wallet information retrieved successfully",
+    payload: userResponse,
+    success: true,
+  });
+});
+
+export { signIn, signUp, getUserInfoWithWallet, walletSignIn, verifyCode };

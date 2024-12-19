@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 
 const userSchema = new mongoose.Schema({
   first_name: { type: String, required: true },
-  last_name: { type: String, required: true },
-  user_type: { type: String, required: true }, // Example: 'admin', 'customer', etc.
+  last_name: { type: String, required: false },
+  user_type: { type: String, required: false, default:"User" }, // Example: 'admin', 'customer', etc.
   email: {
     type: String,
     required: true,
@@ -45,12 +45,6 @@ const userSchema = new mongoose.Schema({
     },
     default: {}, // Optional for users without KYC
   },
-  paid_users: [
-    {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User", // Correctly references the User model
-    },
-  ],
   created_at: { type: Date, default: Date.now }, // Tracks creation time
   updated_at: { type: Date, default: Date.now }, // Tracks last update
 });

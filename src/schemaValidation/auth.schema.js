@@ -36,8 +36,8 @@ const profileDetailsSchema = joi.object({
 
 const signUpUserSchema = joi.object({
   first_name: joi.string().required(),
-  last_name: joi.string().required(),
-  user_type: joi.string().valid("admin", "customer").required(), // Valid values for `user_type`
+  last_name: joi.string().optional(),
+  user_type: joi.string().valid("admin", "customer").optional(), // Valid values for `user_type`
   email: joi.string()
     .email({ tlds: { allow: true } }) // Email validation
     .required(),
