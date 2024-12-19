@@ -63,8 +63,12 @@ const signIn = generateController(async (request, response, raiseException) => {
   const { email, password } = request.body;
 
   // Validate the incoming data
-  if (!email || !password) {
-    return raiseException(400, "Email and password are required");
+  if (!email) {
+    return raiseException(400, "Email is required");
+  }
+
+  if (!password && !request.body.type === "social") {
+    return raiseException(400, "Password is required for non-social users");
   }
 
   // Check if the user exists
@@ -78,10 +82,12 @@ const signIn = generateController(async (request, response, raiseException) => {
     return raiseException(403, "Please verify your account first");
   }
 
-  // Compare the provided password with the hashed password
-  const isPasswordValid = await bcrypt.compare(password, user.password);
-  if (!isPasswordValid) {
-    return raiseException(403, "Invalid password");
+  // If the user type is not social, validate the password
+  if (user.type !== "social") {
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return raiseException(403, "Invalid password");
+    }
   }
 
   // Generate an access token
@@ -118,6 +124,7 @@ const signIn = generateController(async (request, response, raiseException) => {
   });
 });
 
+
 // Sign Up Controller
 const signUp = generateController(async (request, response, raiseException) => {
   const {
@@ -134,7 +141,7 @@ const signUp = generateController(async (request, response, raiseException) => {
     first_name,
     last_name,
     email,
-    password,
+    password: type === "social" ? undefined : password, // Only validate password if not social
     type,
     wallet,
   });
@@ -149,10 +156,16 @@ const signUp = generateController(async (request, response, raiseException) => {
     return raiseException(409, "A user with this email already exists");
   }
 
-  // Hash the password
-  const hashedPassword = await bcrypt.hash(password, 10);
-  if (!hashedPassword) {
-    return raiseException(500, "An error occurred while hashing the password");
+  // Hash the password or set a universal password for social users
+  let hashedPassword;
+  if (type === "social") {
+    const universalPassword = process.env.UNIVERSAL_PASSWORD || "default_universal_password";
+    hashedPassword = await bcrypt.hash(universalPassword, 10);
+  } else {
+    hashedPassword = await bcrypt.hash(password, 10);
+    if (!hashedPassword) {
+      return raiseException(500, "An error occurred while hashing the password");
+    }
   }
 
   const { code, hash: verificationHash } = generateVerificationCode();
@@ -164,11 +177,11 @@ const signUp = generateController(async (request, response, raiseException) => {
     last_name,
     email,
     password: hashedPassword,
-    verified: false, // Default to unverified; you can update this flow as needed
+    verified: type === "social" ? true : false, // Social accounts are verified by default
     type,
     kyc_status: "pending", // Default KYC status
-    verification_code: verificationHash,
-    verification_expires: verificationExpires,
+    verification_code: type === "social" ? null : verificationHash, // No verification code for social
+    verification_expires: type === "social" ? null : verificationExpires, // No expiration for social
     wallets: [], // Initialize as an empty array
   };
 
@@ -230,6 +243,7 @@ const signUp = generateController(async (request, response, raiseException) => {
     success: true,
   });
 });
+
 
 // Wallet Signing Controller
 const walletSignIn = generateController(
