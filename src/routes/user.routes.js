@@ -10,7 +10,9 @@ import {
   getWallets,
   addTransaction,
   getTransactions,
-} from "../controllers/user.controllers";
+  getTotalInvestment,
+  getUserAssetsAndPoolsHoldings,
+} from "../controllers/user.controllers.js";
 
 const router = express.Router();
 

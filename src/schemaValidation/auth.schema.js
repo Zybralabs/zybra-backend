@@ -48,13 +48,13 @@ const signUpUserSchema = joi.object({
   wallet: joi.string().optional(), // Optional array of wallet references
 });
 
-export const verifyCodeSchema = joi.object({
+ const verifyCodeSchema = joi.object({
   email: joi.string().email({ tlds: { allow: true } }).required(),
   code: joi.string().length(6).required(), // 6-digit verification code
 });
 
 // Wallet Sign-In Schema
-export const walletSignInSchema = joi.object({
+ const walletSignInSchema = joi.object({
   walletAddress: joi.string().required(),
 });
 
@@ -99,7 +99,7 @@ const deleteProfileSchema = joi.object().keys({
 });
 
 
-export const emailVerificationSchema = Joi.object({
+const emailVerificationSchema = joi.object({
   email: joi.string().email({ tlds: { allow: true } }).required(),
 });
 

@@ -7,6 +7,7 @@ import {
   walletSignInSchema,
 } from "../schemaValidation/auth.schema.js";
 import {
+  sendVerificationEmailController,
   signIn,
   signUp,
   verifyCode,
@@ -29,7 +30,6 @@ router.post("/wallet-sign-in", validateBody(walletSignInSchema), walletSignIn);
 router.post("/verify-code", validateBody(verifyCodeSchema), verifyCode);
 router.post(
   "/send-verification-email",
-  validateBody(emailVerificationSchema), // Ensure the email is valid
   sendVerificationEmailController
 );
 

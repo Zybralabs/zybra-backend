@@ -10,24 +10,17 @@ const userSchema = new mongoose.Schema({
     unique: true,
     match: /^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,4}$/, // Simplified email regex
   },
-  type: 
+  type: {
+    type: String,
+    enum: ["email", "social"],
+    default: "email",
+  },
   password: { type: String, required: true },
   verified: { type: Boolean, default: false }, // Default to `false` until verified
   profile_status: {
     type: String,
     enum: ["complete", "in-complete"],
     default: "in-complete", // Default for new users
-  },
-  profile_details: {
-    type: {
-      image: { type: String }, // Optional, for profile pictures
-      about: { type: String },
-      country: { type: String },
-      state: { type: String },
-      city: { type: String },
-      address: { type: String },
-    },
-    default: {}, // Ensures no null/undefined profile details
   },
   wallets: [
     {

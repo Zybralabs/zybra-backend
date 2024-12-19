@@ -102,7 +102,6 @@ const signIn = generateController(async (request, response, raiseException) => {
     first_name: user.first_name,
     last_name: user.last_name,
     email: user.email,
-    profile_details: user.profile_details || {},
     kyc_status: user.kyc_status,
     user_type: user.user_type,
     wallets: user.wallets || [], // Include populated wallet data
@@ -126,7 +125,7 @@ const signUp = generateController(async (request, response, raiseException) => {
     last_name,
     email,
     password,
-    profile_details,
+    type,
     wallet, // Optional wallet address
   } = request.body;
 
@@ -136,7 +135,7 @@ const signUp = generateController(async (request, response, raiseException) => {
     last_name,
     email,
     password,
-    profile_details,
+    type,
     wallet,
   });
 
@@ -165,8 +164,8 @@ const signUp = generateController(async (request, response, raiseException) => {
     last_name,
     email,
     password: hashedPassword,
-    profile_details: profile_details || {}, // Optional profile details
     verified: false, // Default to unverified; you can update this flow as needed
+    type,
     kyc_status: "pending", // Default KYC status
     verification_code: verificationHash,
     verification_expires: verificationExpires,

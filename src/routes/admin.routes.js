@@ -1,5 +1,5 @@
 import express from "express";
-import { isAdmin, createPool, updatePool, deletePool, createAsset, updateAsset, deleteAsset } from "../controllers/admin.controller";
+import { isAdmin, createPool, updatePool, deletePool, createAsset, updateAsset, deleteAsset } from "../controllers/admin.controller.js";
 
 const router = express.Router();
 

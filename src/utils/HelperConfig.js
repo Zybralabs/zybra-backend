@@ -1,5 +1,5 @@
-module.exports = {
-    getConfig: () => {
+export 
+    default function getConfig() {
       const networkConfig = {
         entryPoint: "0xEntryPointAddress",
         rpcUrl: `https://sepolia.infura.io/v3/${process.env.INFURA_PROJECT_ID}`, // Replace with the actual RPC URL
@@ -7,6 +7,6 @@ module.exports = {
         account:process.env.WALLET_ADDRESS,
       };
       return networkConfig;
-    },
-  };
+    }
+  
   

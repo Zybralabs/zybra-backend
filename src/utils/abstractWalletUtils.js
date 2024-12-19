@@ -1,11 +1,11 @@
-const { ethers } = require("ethers");
+import { ethers } from "ethers"
 
 // Load helper configuration
-const HelperConfig = require("./HelperConfig");
+import HelperConfig from "./HelperConfig.js"
 
 // Load contract ABIs
-const MinimalAccountABI = require("path-to-MinimalAccount-ABI"); // Update with the correct path
-const EntryPointABI = require("path-to-EntryPoint-ABI"); // Update with the correct path
+import MinimalAccountABI from "../abi/MinimalAccount.json" assert { type: "json" };
+import EntryPointABI from "../abi/EntryPoint.json" assert { type: "json" };
 
 /**
  * Initialize the blockchain environment.
@@ -24,19 +24,7 @@ const initializeBlockchain = () => {
   return { provider, signer, config };
 };
 
-/**
- * Initialize MinimalAccount contract instance.
- * @param {string} minimalAccountAddress - The address of the MinimalAccount contract.
- * @param {object} signerOrProvider - Ethers.js signer or provider instance.
- * @returns {object} - MinimalAccount contract instance.
- */
-const initializeMinimalAccount = (minimalAccountAddress, signerOrProvider) => {
-  if (!minimalAccountAddress) {
-    throw new Error("MinimalAccount address is required");
-  }
 
-  return new ethers.Contract(minimalAccountAddress, MinimalAccountABI, signerOrProvider);
-};
 
 /**
  * Initialize EntryPoint contract instance.
@@ -177,7 +165,7 @@ const deployMinimalAccount = async (userId) => {
 };
 
 
-module.exports = {
+export {
   initializeBlockchain,
   deployContract,
   generateAndExecuteUserOperation,

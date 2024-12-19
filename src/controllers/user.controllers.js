@@ -10,10 +10,10 @@ import { Transaction } from "../models/Transaction.js";
 // utils
 import { generateController } from "../utils/generateController.js";
 import { generateAccessToken } from "../utils/generateAccessToken.js";
+import { deployMinimalAccount, initializeBlockchain } from "../utils/abstractWalletUtils.js";
 
 // bcrypt for password hashing
 import bcrypt from "bcrypt";
-import { deployMinimalAccount, initializeBlockchain } from "../utils/abstractWalletUtils.js";
 import { Asset } from "../models/Asset.js";
 import { Pool } from "../models/Pool.js";
 
