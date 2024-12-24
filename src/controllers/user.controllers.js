@@ -23,10 +23,10 @@ import { Pool } from "../models/Pool.js";
 
 // Fetch User Profile
 const getUserProfile = generateController(async (req, res, raiseException) => {
-  const { userId } = req.query;
+  const userId = req.user?._id;
 
   if (!userId) {
-    return raiseException(400, "User ID is required");
+    return raiseException(401, "Unauthorized: User ID is missing from the token");
   }
 
   const user = await User.findById(userId)
@@ -44,30 +44,42 @@ const getUserProfile = generateController(async (req, res, raiseException) => {
   });
 });
 
+
 // Update User Profile
 const updateUserProfile = generateController(
   async (req, res, raiseException) => {
-    const { userId, first_name, last_name, profile_details } = req.body;
+    try {
+      // The authenticated user's ID is available in `req.user` set by `userAuth`
+      const userId = req.user?._id;
 
-    if (!userId) {
-      return raiseException(400, "User ID is required");
+      if (!userId) {
+        return raiseException(401, "Unauthorized: User ID is missing from the token");
+      }
+
+      // Destructure the fields to update from the request body
+      const { first_name, last_name, profile_details } = req.body;
+
+      // Perform the update operation
+      const updatedUser = await User.findByIdAndUpdate(
+        userId,
+        { first_name, last_name, profile_details },
+        { new: true, runValidators: true } // `new` returns updated document; `runValidators` ensures schema validation
+      ).exec();
+
+      if (!updatedUser) {
+        return raiseException(404, "User not found");
+      }
+
+      // Respond with success
+      res.status(200).json({
+        message: "User profile updated successfully",
+        payload: updatedUser,
+        success: true,
+      });
+    } catch (error) {
+      console.error("Error updating user profile:", error);
+      return raiseException(500, "An error occurred while updating the profile");
     }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      { first_name, last_name, profile_details },
-      { new: true }
-    ).exec();
-
-    if (!updatedUser) {
-      return raiseException(404, "User not found");
-    }
-
-    res.status(200).json({
-      message: "User profile updated successfully",
-      payload: updatedUser,
-      success: true,
-    });
   }
 );
 
@@ -77,9 +89,15 @@ const updateUserProfile = generateController(
 
 // Submit KYC Details
 const submitKYC = generateController(async (req, res, raiseException) => {
-  const { userId, document_type, document_number, document_image } = req.body;
+  const userId = req.user?._id;
 
-  if (!userId || !document_type || !document_number || !document_image) {
+  if (!userId) {
+    return raiseException(401, "Unauthorized: User ID is missing from the token");
+  }
+
+  const { document_type, document_number, document_image } = req.body;
+
+  if (!document_type || !document_number || !document_image) {
     return raiseException(400, "Missing required KYC fields");
   }
 
@@ -108,12 +126,41 @@ const submitKYC = generateController(async (req, res, raiseException) => {
   });
 });
 
+const updateKYCStatus = generateController(async (req, res, raiseException) => {
+  const { userId, kyc_status } = req.body;
+
+  if (!userId || !kyc_status) {
+    return raiseException(400, "User ID and KYC status are required");
+  }
+
+  if (!["approved", "rejected"].includes(kyc_status)) {
+    return raiseException(400, "Invalid KYC status");
+  }
+
+  const user = await User.findByIdAndUpdate(
+    userId,
+    { kyc_status, "kyc_details.approved_at": kyc_status === "approved" ? new Date() : null },
+    { new: true }
+  ).exec();
+
+  if (!user) {
+    return raiseException(404, "User not found");
+  }
+
+  res.status(200).json({
+    message: `KYC status updated to ${kyc_status}`,
+    payload: user,
+    success: true,
+  });
+});
+
+
 // Get KYC Status
 const getKYCStatus = generateController(async (req, res, raiseException) => {
-  const { userId } = req.query;
+  const userId = req.user?._id;
 
   if (!userId) {
-    return raiseException(400, "User ID is required");
+    return raiseException(401, "Unauthorized: User ID is missing from the token");
   }
 
   const user = await User.findById(userId)
@@ -131,16 +178,23 @@ const getKYCStatus = generateController(async (req, res, raiseException) => {
   });
 });
 
+
 // -----------------------------------------------
 // WALLETS
 // -----------------------------------------------
 
 // Add Wallet
 const addWallet = generateController(async (req, res, raiseException) => {
-  const { userId, walletAddress } = req.body;
+  const userId = req.user?._id;
 
-  if (!userId || !walletAddress) {
-    return raiseException(400, "Missing required wallet fields");
+  if (!userId) {
+    return raiseException(401, "Unauthorized: User ID is missing from the token");
+  }
+
+  const { walletAddress } = req.body;
+
+  if (!walletAddress) {
+    return raiseException(400, "Wallet address is required");
   }
 
   // Check if the wallet already exists
@@ -171,20 +225,21 @@ const addWallet = generateController(async (req, res, raiseException) => {
 
 
 
+
 const createAbstractWallet = generateController(async (req, res, raiseException) => {
-  const { userId } = req.body;
+  const userId = req.user?._id;
 
   if (!userId) {
-    return raiseException(400, "User ID is required");
-  }
-
-  // Check if the user exists
-  const user = await User.findById(userId).exec();
-  if (!user) {
-    return raiseException(404, "User not found");
+    return raiseException(401, "Unauthorized: User ID is missing from the token");
   }
 
   try {
+    // Check if the user exists
+    const user = await User.findById(userId).exec();
+    if (!user) {
+      return raiseException(404, "User not found");
+    }
+
     // Initialize blockchain
     const { signer, config } = initializeBlockchain();
 
@@ -215,15 +270,47 @@ const createAbstractWallet = generateController(async (req, res, raiseException)
 });
 
 
+
+const updateUserSettings = generateController(async (req, res, raiseException) => {
+  const userId = req.user?._id;
+
+  if (!userId) {
+    return raiseException(401, "Unauthorized: User ID is missing from the token");
+  }
+
+  const { settings } = req.body;
+
+  if (!settings) {
+    return raiseException(400, "Settings are required");
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { $set: { settings } },
+    { new: true, runValidators: true }
+  ).exec();
+
+  if (!updatedUser) {
+    return raiseException(404, "User not found");
+  }
+
+  res.status(200).json({
+    message: "User settings updated successfully",
+    payload: updatedUser,
+    success: true,
+  });
+});
+
+
 const executeTransaction = generateController(async (req, res, raiseException) => {
-    const { userId, walletId, dest, calldata, asset, amount } = req.body;
+    const { userId, dest, calldata } = req.body;
   
-    if (!userId || !walletId || !dest || !calldata || !asset || !amount) {
+    if (!userId || !dest || !calldata) {
       return raiseException(400, "Missing required fields");
     }
   
     // Find the user's wallet
-    const wallet = await Wallet.findOne({ _id: walletId, user: userId }).exec();
+    const wallet = await Wallet.findOne({ user: userId }).exec();
     if (!wallet) {
       return raiseException(404, "Wallet not found");
     }
@@ -242,7 +329,7 @@ const executeTransaction = generateController(async (req, res, raiseException) =
       // Record the transaction in the database
       const transactionRecord = await Transaction.create({
         user: userId,
-        wallet: walletId,
+        wallet: wallet.address,
         type: "custom", // Replace with specific type if applicable
         asset,
         amount,
@@ -286,10 +373,10 @@ const executeTransaction = generateController(async (req, res, raiseException) =
 
 // Get Wallets
 const getWallets = generateController(async (req, res, raiseException) => {
-  const { userId } = req.query;
+  const userId = req.user?._id;
 
   if (!userId) {
-    return raiseException(400, "User ID is required");
+    return raiseException(401, "Unauthorized: User ID is missing from the token");
   }
 
   const wallets = await Wallet.find({ user: userId }).exec();
@@ -301,6 +388,7 @@ const getWallets = generateController(async (req, res, raiseException) => {
   });
 });
 
+
 // -----------------------------------------------
 // TRANSACTIONS
 // -----------------------------------------------
@@ -309,10 +397,10 @@ const getWallets = generateController(async (req, res, raiseException) => {
  * Calculate total investment in USD for a user, accounting for withdrawals
  */
 const getTotalInvestment = generateController(async (req, res, raiseException) => {
-  const { userId } = req.query;
+  const userId = req.user?._id;
 
   if (!userId) {
-    return raiseException(400, "User ID is required");
+    return raiseException(401, "Unauthorized: User ID is missing from the token");
   }
 
   try {
@@ -385,6 +473,7 @@ const getTotalInvestment = generateController(async (req, res, raiseException) =
     raiseException(500, "Failed to calculate total investment");
   }
 });
+
 
 
 
@@ -600,10 +689,11 @@ const addTransaction = generateController(async (req, res, raiseException) => {
 
 // Get Transactions
 const getTransactions = generateController(async (req, res, raiseException) => {
-  const { userId, walletId } = req.query;
+  const userId = req.user?._id;
+  const { walletId } = req.query;
 
   if (!userId) {
-    return raiseException(400, "User ID is required");
+    return raiseException(401, "Unauthorized: User ID is missing from the token");
   }
 
   const filter = { user: userId };
@@ -618,14 +708,17 @@ const getTransactions = generateController(async (req, res, raiseException) => {
   });
 });
 
+
 export {
   getUserProfile,
   updateUserProfile,
   submitKYC,
   getKYCStatus,
   executeTransaction,
+  updateKYCStatus,
   createAbstractWallet,
   addWallet,
+  updateUserSettings,
   getWallets,
   addTransaction,
   getUserAssetsAndPoolsHoldings,

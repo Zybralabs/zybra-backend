@@ -70,24 +70,34 @@ const generateAndExecuteUserOperation = async (
   calldata,
   senderAccount
 ) => {
+  // Initialize blockchain environment
   const { signer, config } = initializeBlockchain();
 
+  // Initialize EntryPoint contract
   const entryPoint = initializeEntryPoint(config.entryPoint, signer);
 
   try {
-    // Nonce and gas information
+    // Fetch nonce for minimalAccountAddress
     const nonce = await signer.provider.getTransactionCount(minimalAccountAddress);
+
+    // Dynamically calculate gas parameters
     const gasPrice = await signer.provider.getGasPrice();
+    const estimatedGas = await signer.provider.estimateGas({
+      from: minimalAccountAddress,
+      to: dest,
+      data: calldata,
+    });
+
     const verificationGasLimit = ethers.BigNumber.from("200000");
-    const callGasLimit = ethers.BigNumber.from("100000");
+    const callGasLimit = estimatedGas.add(ethers.BigNumber.from("100000"));
     const maxPriorityFeePerGas = ethers.utils.parseUnits("2", "gwei");
     const maxFeePerGas = gasPrice.add(maxPriorityFeePerGas);
 
-    // Create user operation
+    // Construct the unsigned user operation
     const userOp = {
       sender: minimalAccountAddress,
       nonce,
-      initCode: "0x",
+      initCode: "0x", // Not used if account is deployed
       callData: calldata,
       accountGasLimits: ethers.BigNumber.from("0x")
         .shl(128)
@@ -98,23 +108,26 @@ const generateAndExecuteUserOperation = async (
         .shl(128)
         .or(maxPriorityFeePerGas)
         .or(maxFeePerGas),
-      paymasterAndData: "0x",
-      signature: "0x", // Placeholder, to be signed below
+      paymasterAndData: "0x", // Optional
+      signature: "0x", // Placeholder, to be signed
     };
 
-    // Hash and sign
+    // Generate User Operation hash
     const userOpHash = await entryPoint.getUserOpHash(userOp);
     const digest = ethers.utils.hashMessage(userOpHash);
+
+    // Sign the operation
     const signature = await signer.signMessage(ethers.utils.arrayify(digest));
     userOp.signature = signature;
 
     console.log("User Operation signed:", userOp);
 
-    // Execute the signed user operation
+    // Submit the signed operation
     console.log("Sending User Operation...");
     const tx = await entryPoint.handleOps([userOp], senderAccount);
     console.log("Transaction hash:", tx.hash);
 
+    // Wait for confirmation
     const receipt = await tx.wait();
     console.log("Transaction confirmed in block:", receipt.blockNumber);
     return receipt;

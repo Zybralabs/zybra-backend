@@ -250,53 +250,62 @@ const walletSignIn = generateController(
   async (request, response, raiseException) => {
     const { walletAddress } = request.body;
 
-    // Check if a user with the given wallet address exists
-    let wallet = await Wallet.findOne({ address: walletAddress }).exec();
+    if (!walletAddress) {
+      return raiseException(400, "Wallet address is required");
+    }
 
-    // If wallet doesn't exist, create a new wallet and user
+    // Check if the wallet exists
+    const wallet = await Wallet.findOne({ address: walletAddress }).populate("user").exec();
+
+    // If wallet is not associated with any user
     if (!wallet) {
-      const newUser = await User.create({
-        first_name: null,
-        last_name: null,
-        email: null,
-        password: null,
-        verified: true, // Wallet sign-in users are assumed verified
-        kyc_status: "pending",
-      });
+      return raiseException(404, "No account setup for this wallet address");
+    }
 
-      wallet = await Wallet.create({
-        user: newUser._id,
-        address: walletAddress,
-        wallet_type: "web3-wallet", // Default wallet type
-      });
+    // Ensure user exists for the wallet
+    const user = wallet.user;
+    if (!user) {
+      return raiseException(404, "No user associated with this wallet");
     }
 
     // Generate an access token
     const token = generateAccessToken({
-      userId: wallet.user,
+      userId: user._id,
       walletAddress: wallet.address,
     });
 
     // Save the token in the database
-    const newToken = await Token.create({ user: wallet.user, token });
+    const newToken = await Token.create({ user: user._id, token });
     if (!newToken) {
       return raiseException(500, "Token creation failed");
     }
 
+    // Prepare the response payload with user and wallet details
+    const responsePayload = {
+      user: {
+        id: user._id,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        email: user.email,
+        kyc_status: user.kyc_status,
+        user_type: user.user_type,
+      },
+      wallet: {
+        address: wallet.address,
+        type: wallet.wallet_type,
+      },
+      token,
+    };
+
     // Respond with user and wallet data
     response.status(200).json({
       message: "User successfully signed in via wallet",
-      payload: {
-        wallet: {
-          address: wallet.address,
-          type: wallet.wallet_type,
-        },
-        token,
-      },
+      payload: responsePayload,
       success: true,
     });
   }
 );
+
 
 const verifyCode = generateController(async (request, response, raiseException) => {
   const { email, code } = request.body;
@@ -333,35 +342,19 @@ const verifyCode = generateController(async (request, response, raiseException) 
   });
 });
 
-const getUserInfoWithWallet = generateController(async (request, response, raiseException) => {
-  const { authorization } = request.headers;
+const getUserInfoWithWallet = generateController(async (req, res, raiseException) => {
+  const userId = req.user._id;
 
-  // Check if token is provided
-  if (!authorization || !authorization.startsWith("Bearer ")) {
-    return raiseException(401, "Authorization token is missing or invalid");
-  }
-
-  const token = authorization.split(" ")[1];
-
-  // Find the token in the database
-  const tokenRecord = await Token.findOne({ token }).exec();
-  if (!tokenRecord) {
-    return raiseException(401, "Invalid or expired session token");
-  }
-
-  // Fetch the user linked to the token
-  const user = await User.findById(tokenRecord.user).exec();
+  const user = await User.findById(userId).populate("wallets").exec();
   if (!user) {
     return raiseException(404, "User not found");
   }
 
-  // Fetch the user's wallet
-  const wallet = await Wallet.findOne({ user: user._id }).exec();
+  const wallet = await Wallet.findOne({ user: userId }).exec();
   if (!wallet) {
     return raiseException(404, "Wallet not found");
   }
 
-  // Prepare the response payload
   const userResponse = {
     id: user._id,
     first_name: user.first_name,
@@ -371,12 +364,11 @@ const getUserInfoWithWallet = generateController(async (request, response, raise
     user_type: user.user_type,
     wallet: {
       address: wallet.address,
-      type: wallet.type,
+      type: wallet.wallet_type,
     },
   };
 
-  // Send the response
-  response.status(200).json({
+  res.status(200).json({
     message: "User and wallet information retrieved successfully",
     payload: userResponse,
     success: true,

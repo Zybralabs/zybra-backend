@@ -23,7 +23,7 @@ const router = express.Router();
 router.get("/profile",userAuth, getUserProfile);
 
 // Update user profile
-router.put("/profile",userAuth, updateUserProfile);
+router.put("/edit-profile",userAuth, updateUserProfile);
 
 // --------------------- KYC ROUTES ---------------------
 
